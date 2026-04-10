@@ -1,5 +1,3 @@
-
-
 $(function () {
     cargarTalleres();
 
@@ -11,7 +9,7 @@ $(function () {
 
     function cargarTalleres() {
         $.get("index.php", { option: "talleres_json" }, function (data) {
-            let talleres = JSON.parse(data);
+            let talleres = data;
             let html = "";
 
             if (talleres.length === 0) {
@@ -35,7 +33,7 @@ $(function () {
             }
 
             $("#tabla-talleres-body").html(html);
-        });
+        }, "json");
     }
 
     $(document).on("click", ".btnSolicitar", function () {
@@ -45,7 +43,7 @@ $(function () {
             option: "solicitar",
             taller_id: tallerId
         }, function (data) {
-            let response = JSON.parse(data);
+            let response = data;
 
             if (response.success) {
                 $("#mensaje").html(`<div class="alert alert-success">${response.message}</div>`);
@@ -53,6 +51,6 @@ $(function () {
             } else {
                 $("#mensaje").html(`<div class="alert alert-danger">${response.error}</div>`);
             }
-        });
+        }, "json");
     });
 });
