@@ -11,7 +11,7 @@ $(function () {
 
     function cargarSolicitudes() {
         $.get("index.php", { option: "solicitudes_json" }, function (data) {
-            let solicitudes = JSON.parse(data);
+            let solicitudes = data;
             let html = "";
 
             if (solicitudes.length === 0) {
@@ -34,7 +34,7 @@ $(function () {
             }
 
             $("#solicitudes-body").html(html);
-        });
+        }, "json");
     }
 
     $(document).on("click", ".btnAprobar", function () {
@@ -44,7 +44,7 @@ $(function () {
             option: "aprobar",
             id_solicitud: idSolicitud
         }, function (data) {
-            let response = JSON.parse(data);
+            let response = data;
 
             if (response.success) {
                 $("#mensaje").html(`<div class="alert alert-success">${response.message}</div>`);
@@ -52,7 +52,7 @@ $(function () {
             } else {
                 $("#mensaje").html(`<div class="alert alert-danger">${response.error}</div>`);
             }
-        });
+        }, "json");
     });
 
     $(document).on("click", ".btnRechazar", function () {
@@ -62,7 +62,7 @@ $(function () {
             option: "rechazar",
             id_solicitud: idSolicitud
         }, function (data) {
-            let response = JSON.parse(data);
+            let response = data;
 
             if (response.success) {
                 $("#mensaje").html(`<div class="alert alert-success">${response.message}</div>`);
@@ -70,6 +70,6 @@ $(function () {
             } else {
                 $("#mensaje").html(`<div class="alert alert-danger">${response.error}</div>`);
             }
-        });
+        }, "json");
     });
 });
