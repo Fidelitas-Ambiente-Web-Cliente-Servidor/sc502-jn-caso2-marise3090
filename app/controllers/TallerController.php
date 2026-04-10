@@ -25,28 +25,58 @@ class TallerController
         }
         require __DIR__ . '/../views/taller/listado.php';
     }
-    
+
     public function getTalleresJson()
     {
         if (!isset($_SESSION['id'])) {
+            header('Content-Type: application/json');
             echo json_encode([]);
             return;
         }
-        
+
         $talleres = $this->tallerModel->getAllDisponibles();
         header('Content-Type: application/json');
         echo json_encode($talleres);
     }
-    
+
     public function solicitar()
     {
+        header('Content-Type: application/json');
+
         if (!isset($_SESSION['id'])) {
             echo json_encode(['success' => false, 'error' => 'Debes iniciar sesión']);
             return;
         }
-        
-        $tallerId = $_POST['taller_id'] ?? 0;
-        $usuarioId = $_SESSION['id'];
 
+        $tallerId = isset($_POST['taller_id']) ? (int) $_POST['taller_id'] : 0;
+        $usuarioId = (int) $_SESSION['id'];
+
+        if ($tallerId <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Taller inválido']);
+            return;
+        }
+
+        $taller = $this->tallerModel->getById($tallerId);
+
+        if (!$taller) {
+            echo json_encode(['success' => false, 'error' => 'El taller no existe']);
+            return;
+        }
+
+        if ((int)$taller['cupo_disponible'] <= 0) {
+            echo json_encode(['success' => false, 'error' => 'No hay cupos disponibles']);
+            return;
+        }
+
+        if ($this->solicitudModel->existeSolicitudActiva($usuarioId, $tallerId)) {
+            echo json_encode(['success' => false, 'error' => 'Ya tienes una solicitud activa o aprobada para este taller']);
+            return;
+        }
+
+        if ($this->solicitudModel->crear($tallerId, $usuarioId)) {
+            echo json_encode(['success' => true, 'message' => 'Solicitud enviada correctamente']);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'No se pudo registrar la solicitud']);
+        }
     }
 }

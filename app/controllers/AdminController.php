@@ -25,36 +25,91 @@ class AdminController
         }
         require __DIR__ . '/../views/admin/solicitudes.php';
     }
-    
-    // Aprobar solicitud
+
+    public function getSolicitudesJson()
+    {
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
+            echo json_encode([]);
+            return;
+        }
+
+        $solicitudes = $this->solicitudModel->getPendientes();
+        echo json_encode($solicitudes);
+    }
+
     public function aprobar()
     {
+        header('Content-Type: application/json');
+
         if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
             echo json_encode(['success' => false, 'error' => 'No autorizado']);
             return;
         }
-        
-        $solicitudId = $_POST['id_solicitud'] ?? 0;
-        
-        try {
-            
-            echo json_encode(['success' => true]);
-            
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+
+        $solicitudId = isset($_POST['id_solicitud']) ? (int) $_POST['id_solicitud'] : 0;
+
+        if ($solicitudId <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Solicitud inválida']);
+            return;
         }
+
+        $solicitud = $this->solicitudModel->getById($solicitudId);
+
+        if (!$solicitud) {
+            echo json_encode(['success' => false, 'error' => 'La solicitud no existe']);
+            return;
+        }
+
+        if ($solicitud['estado'] !== 'pendiente') {
+            echo json_encode(['success' => false, 'error' => 'La solicitud ya fue procesada']);
+            return;
+        }
+
+        $taller = $this->tallerModel->getById($solicitud['taller_id']);
+
+        if (!$taller) {
+            echo json_encode(['success' => false, 'error' => 'El taller no existe']);
+            return;
+        }
+
+        if ((int)$taller['cupo_disponible'] <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Ya no hay cupos disponibles']);
+            return;
+        }
+
+        if (!$this->tallerModel->descontarCupo($solicitud['taller_id'])) {
+            echo json_encode(['success' => false, 'error' => 'No se pudo descontar el cupo']);
+            return;
+        }
+
+        if (!$this->solicitudModel->aprobar($solicitudId)) {
+            echo json_encode(['success' => false, 'error' => 'No se pudo aprobar la solicitud']);
+            return;
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Solicitud aprobada correctamente']);
     }
+
     public function rechazar()
     {
+        header('Content-Type: application/json');
+
         if (!isset($_SESSION['id']) || $_SESSION['rol'] !== 'admin') {
             echo json_encode(['success' => false, 'error' => 'No autorizado']);
             return;
         }
-        
-        $solicitudId = $_POST['id_solicitud'] ?? 0;
-        
+
+        $solicitudId = isset($_POST['id_solicitud']) ? (int) $_POST['id_solicitud'] : 0;
+
+        if ($solicitudId <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Solicitud inválida']);
+            return;
+        }
+
         if ($this->solicitudModel->rechazar($solicitudId)) {
-            echo json_encode(['success' => true]);
+            echo json_encode(['success' => true, 'message' => 'Solicitud rechazada correctamente']);
         } else {
             echo json_encode(['success' => false, 'error' => 'Error al rechazar']);
         }
